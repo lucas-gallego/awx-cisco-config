@@ -2,28 +2,33 @@ hostname {{ hostname }}
 !
 ip cef
 no ipv6 cef
+!
 ip domain name cl-hosting.internal
 multilink bundle-name authenticated
-username clh-admin privilege 15 secret {{ password }}
+!
+! --- MOT DE PASSE ADMIN ---
+username clh-admin privilege 15 secret {{ admin_password }}
+!
 ip ssh version 2
 crypto key generate rsa modulus 2048
 line vty 0 4 
  transport input SSH
 !
 ! ===== DHCP LAN DATA =====
-ip dhcp pool LAN-{{ site_code }}
+ip dhcp pool {{ dhcp_pool_lan_name }}
  network {{ lan_data_network }} {{ lan_data_mask }}
  default-router {{ lan_data_gateway }} 
  domain-name capra.internal
  dns-server 10.200.4.1 8.8.8.8
  option 167 ascii FALSE
- option 199 ascii defa-{{ site_code }}
+ ! --- OPTION 199 PERSONNALISEE ---
+ option 199 ascii {{ option_199_value }}
  option 165 ascii 10.200.4.12:443
  option 166 ascii 10.200.4.12:1883
  lease 8
 !
 ! ===== DHCP LAN VOIP =====
-ip dhcp pool VOIP-{{ site_code }}
+ip dhcp pool {{ dhcp_pool_voip_name }}
  network {{ lan_voip_network }} {{ lan_voip_mask }}
  dns-server 8.8.8.8
  default-router {{ lan_voip_gateway }}
@@ -35,15 +40,22 @@ interface Embedded-Service-Engine0/0
  no ip address
  shutdown
 !
+! --- LOGIQUE WAN (0/0) ---
 interface GigabitEthernet0/0
- description WAN INTERNET
+ description WAN INTERNET STANDARD
+ {% if type_connexion == 'FIBRE' %}
+ shutdown
+ no ip address
+ {% else %}
  ip address {{ wan_ip }} {{ wan_mask }}
  ip nat outside
  ip virtual-reassembly in
  duplex auto
  speed auto
  no shutdown
+ {% endif %}
 !
+! LAN DATA (Toujours actif)
 interface GigabitEthernet0/1
  description LAN DATA
  ip address {{ lan_data_gateway }} {{ lan_data_mask }}
@@ -53,6 +65,7 @@ interface GigabitEthernet0/1
  speed auto
  no shutdown
 !
+! VLAN VOIP (Toujours actif)
 interface GigabitEthernet0/1.130
  description LAN VOIP
  encapsulation dot1Q 130
@@ -61,27 +74,45 @@ interface GigabitEthernet0/1.130
  ip virtual-reassembly in
  no shutdown
 !
+! --- LOGIQUE FIBRE P2P (0/0/0) ---
 interface GigabitEthernet0/0/0
- description LIEN BGP CORE
+ {% if type_connexion == 'FIBRE' %}
+ description LIEN BGP CORE (FIBRE)
  ip address {{ p2p_local_ip }} 255.255.255.252
  no shutdown
+ {% else %}
+ description NON UTILISE
+ shutdown
+ {% endif %}
 !
-! ===== BGP =====
+! ===== BGP VERS CORE =====
 router bgp 64999
  bgp log-neighbor-changes
  neighbor {{ p2p_neighbor_ip }} remote-as 65500
  !
  address-family ipv4
+  ! Les networks sont mis a jour automatiquement selon tes variables LAN
   network {{ lan_data_network }} mask {{ lan_data_mask }}
   network {{ lan_voip_network }} mask {{ lan_voip_mask }}
   neighbor {{ p2p_neighbor_ip }} activate
  exit-address-family
 !
+! ===== NAT + ROUTE =====
 ip nat inside source list 1 interface GigabitEthernet0/0 overload
+! Route par defaut
+{% if type_connexion == 'FIBRE' %}
+! Route via BGP ou statique vers coeur (a ajuster si besoin)
+ip route 0.0.0.0 0.0.0.0 {{ p2p_neighbor_ip }}
+{% else %}
 ip route 0.0.0.0 0.0.0.0 {{ wan_gateway }}
+{% endif %}
 !
+! ===== ACLs =====
 access-list 1 permit {{ lan_data_network }} {{ lan_data_wildcard }}
 access-list 1 permit {{ lan_voip_network }} {{ lan_voip_wildcard }}
+!
+access-list 100 permit ip {{ lan_data_network }} {{ lan_data_wildcard }} any
+access-list 100 permit ip {{ lan_voip_network }} {{ lan_voip_wildcard }} any
 !
 line con 0
  logging synchronous
