@@ -1,10 +1,10 @@
 ---
 - name: Generateur de Configuration
-  hosts: localhost
+  hosts: all
+  connection: local
   gather_facts: no
   vars:
-    # --- VALEURS PAR DEFAUT DE SECURITE ---
-    # Si le questionnaire est vide, ces valeurs seront utilisées
+    # --- VALEURS PAR DEFAUT ---
     hostname: "ROUTEUR-DEFAULT"
     site_code: "SITE-XX"
     wan_ip: "192.0.2.10"
