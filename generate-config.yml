@@ -3,11 +3,26 @@
   hosts: localhost
   gather_facts: no
   vars:
-    # Valeur par défaut pour éviter un crash si vide
-    hostname: "ROUTEUR-TEST"
-  
+    # --- VALEURS PAR DEFAUT DE SECURITE ---
+    # Si le questionnaire est vide, ces valeurs seront utilisées
+    hostname: "ROUTEUR-DEFAULT"
+    site_code: "SITE-XX"
+    wan_ip: "192.0.2.10"
+    wan_mask: "255.255.255.0"
+    wan_gateway: "192.0.2.1"
+    lan_data_network: "10.0.10.0"
+    lan_data_mask: "255.255.255.0"
+    lan_data_gateway: "10.0.10.254"
+    lan_data_wildcard: "0.0.0.255"
+    lan_voip_network: "10.0.20.0"
+    lan_voip_mask: "255.255.255.0"
+    lan_voip_gateway: "10.0.20.254"
+    lan_voip_wildcard: "0.0.0.255"
+    p2p_local_ip: "10.255.0.2"
+    p2p_neighbor_ip: "10.255.0.1"
+
   tasks:
-    - name: Création du fichier de config
+    - name: Generation du fichier de config
       template:
         src: templates/cisco_full.j2
         dest: "/tmp/{{ hostname }}.cfg"
