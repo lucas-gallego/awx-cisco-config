@@ -3,11 +3,11 @@ hostname {{ hostname }}
 ip cef
 no ipv6 cef
 !
-ip domain name cl-hosting.internal
+ip domain name lucas.internal
 multilink bundle-name authenticated
 !
 {# --- GESTION DU MOT DE PASSE --- #}
-username clh-admin privilege 15 secret {{ admin_password }}
+username lucas-admin privilege 15 secret {{ admin_password }}
 !
 ip ssh version 2
 crypto key generate rsa modulus 2048
@@ -19,7 +19,7 @@ line vty 0 4
 ip dhcp pool LAN-{{ site_code }}
  network {{ lan_data_network }} {{ lan_data_mask }}
  default-router {{ lan_data_gateway }} 
- domain-name capra.internal
+ domain-name lucas.internal
  dns-server 10.200.4.1 8.8.8.8
  option 167 ascii FALSE
  option 199 ascii defa-{{ site_code }}
@@ -31,7 +31,7 @@ ip dhcp pool VOIP-{{ site_code }}
  network {{ lan_voip_network }} {{ lan_voip_mask }}
  dns-server 8.8.8.8
  default-router {{ lan_voip_gateway }}
- option 150 ip 185.196.62.164
+ option 150 ip 1.1.1.1
  lease 8
 !
 ! ===== INTERFACES =====
