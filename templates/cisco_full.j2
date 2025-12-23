@@ -3,11 +3,11 @@ hostname {{ hostname }}
 ip cef
 no ipv6 cef
 !
-ip domain name lucas.internal
+ip domain name {{ domain_name }}
 multilink bundle-name authenticated
 !
-{# --- GESTION DU MOT DE PASSE --- #}
-username lucas-admin privilege 15 secret {{ admin_password }}
+{# --- GESTION DU COMPTE ADMIN --- #}
+username {{ admin_username }} privilege 15 secret {{ admin_password }}
 !
 ip ssh version 2
 crypto key generate rsa modulus 2048
@@ -16,20 +16,20 @@ line vty 0 4
 !
 {# --- DHCP POOLS (Noms et Options dynamiques) --- #}
 !
-ip dhcp pool LAN-{{ site_code }}
+ip dhcp pool {{ dhcp_pool_lan_name }}
  network {{ lan_data_network }} {{ lan_data_mask }}
  default-router {{ lan_data_gateway }} 
- domain-name lucas.internal
- dns-server 10.200.4.1 8.8.8.8
+ domain-name {{ domain_name }}
+ dns-server {{ dns_servers_lan }}
  option 167 ascii FALSE
  option 199 ascii defa-{{ site_code }}
  option 165 ascii 10.200.4.12:443
  option 166 ascii 10.200.4.12:1883
  lease 8
 !
-ip dhcp pool VOIP-{{ site_code }}
+ip dhcp pool {{ dhcp_pool_voip_name }}
  network {{ lan_voip_network }} {{ lan_voip_mask }}
- dns-server 8.8.8.8
+ dns-server {{ dns_servers_voip }}
  default-router {{ lan_voip_gateway }}
  option 150 ip 1.1.1.1
  lease 8
@@ -101,7 +101,6 @@ router bgp 64999
  exit-address-family
 !
 ! ===== NAT + ROUTE PAR DEFAUT =====
-{# Le NAT doit pointer vers la bonne interface selon le choix #}
 {% if wan_type == 'fibre' %}
 ip nat inside source list 1 interface GigabitEthernet0/0/0 overload
 {% else %}
